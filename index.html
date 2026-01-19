@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Alur Kerja IT (Sesuai Bagan Organisasi)</title>
+    <style>
+        /* --- RESET & LAYOUT --- */
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f4f6f8;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        h2 { margin-bottom: 5px; color: #2c3e50; }
+        p.subtitle { color: #7f8c8d; margin-bottom: 20px; font-size: 14px; }
+
+        /* --- CONTROL PANEL --- */
+        .controls {
+            position: sticky; top: 10px; z-index: 100;
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.08);
+            width: 100%; max-width: 1000px;
+            display: flex; gap: 20px; align-items: flex-start;
+            border: 1px solid #e1e4e8;
+        }
+
+        .btn-group { display: flex; flex-direction: column; gap: 8px; min-width: 100px; }
+        
+        button {
+            padding: 10px 15px; border: none; border-radius: 6px; cursor: pointer;
+            font-weight: 600; font-size: 13px; transition: 0.2s; color: white;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .btn-prev { background-color: #95a5a6; }
+        .btn-next { background-color: #2c3e50; }
+        .btn-next:hover { background-color: #1a252f; }
+
+        .info-panel { flex-grow: 1; text-align: left; padding-left: 15px; border-left: 3px solid #eee; }
+        
+        .phase-badge {
+            display: inline-block; padding: 4px 10px; border-radius: 20px;
+            font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: 1px;
+            margin-bottom: 8px; color: white;
+        }
+        .bg-build { background: linear-gradient(135deg, #27ae60, #2ecc71); }
+        .bg-maint { background: linear-gradient(135deg, #c0392b, #e74c3c); }
+
+        .step-title { font-size: 18px; font-weight: 700; color: #333; display: block; margin-bottom: 8px; }
+        
+        .detail-text {
+            font-size: 14px; color: #555; line-height: 1.6;
+            background: #fafafa; padding: 10px; border-radius: 6px; border: 1px solid #eee;
+        }
+
+        /* --- BOARD LAYOUT --- */
+        .board {
+            display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px;
+            width: 100%; max-width: 1100px; margin-top: 25px;
+        }
+
+        .lane {
+            background: white; border-radius: 10px; padding: 15px;
+            border-top: 6px solid #ccc; min-height: 550px;
+            display: flex; flex-direction: column; gap: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.03);
+        }
+
+        .lane-header {
+            text-align: center; font-weight: 800; font-size: 12px; text-transform: uppercase;
+            padding-bottom: 12px; border-bottom: 2px solid #f0f0f0; margin-bottom: 5px; color: #555;
+        }
+
+        /* Lane Colors Matching Chart */
+        .lane-strat { border-top-color: #e67e22; } /* Orange */
+        .lane-apps { border-top-color: #27ae60; }  /* Green */
+        .lane-infra { border-top-color: #2980b9; } /* Blue */
+
+        /* --- ROLE CARDS --- */
+        .card {
+            background: #fff; border: 1px solid #e0e0e0; padding: 10px;
+            border-radius: 8px; display: flex; align-items: center; gap: 10px;
+            opacity: 0.4; transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+        }
+
+        .icon { font-size: 22px; width: 35px; text-align: center; }
+        .card-text { display: flex; flex-direction: column; }
+        /* Role Name Sesuai Bagan */
+        .role-name { font-size: 11px; font-weight: 800; color: #333; margin-bottom: 2px; }
+        .role-job { font-size: 9px; color: #777; font-style: italic; }
+
+        .group-div { font-size: 10px; font-weight: bold; color: #aaa; text-transform: uppercase; margin-top: 10px; margin-bottom: 5px; padding-left: 5px; letter-spacing: 0.5px; }
+
+        /* --- ACTIVE STATES --- */
+        .card.active {
+            opacity: 1; transform: scale(1.03);
+            background-color: #fff;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.12);
+            border-left-width: 5px;
+        }
+        
+        .lane-strat .card.active { border-left-color: #e67e22; }
+        .lane-apps .card.active { border-left-color: #27ae60; }
+        .lane-infra .card.active { border-left-color: #2980b9; }
+
+        /* Maintenance Mode Red Effect */
+        .alert-mode .lane { background-color: #fff5f5; border-color: #e74c3c; }
+    </style>
+</head>
+<body>
+
+    <h2>Simulasi Alur Kerja IT (Versi Final)</h2>
+    <p class="subtitle">Klik "Next" untuk melihat perjalanan proyek dari Ide sampai Maintenance.</p>
+
+    <div class="controls">
+        <div class="btn-group">
+            <button class="btn-prev" onclick="move(-1)">&#8592; Mundur</button>
+            <button class="btn-next" onclick="move(1)">Lanjut &#8594;</button>
+        </div>
+        <div class="info-panel">
+            <span id="phaseBadge" class="phase-badge bg-build">FASE PEMBUATAN</span>
+            <span id="stepTitle" class="step-title">1. Mulai</span>
+            <div id="stepDetail" class="detail-text">
+                Selamat datang. Klik tombol <b>Lanjut</b> untuk memulai simulasi.
+            </div>
+        </div>
+    </div>
+
+    <div class="board" id="mainBoard">
+        <div class="lane lane-strat">
+            <div class="lane-header" style="color:#d35400">Strategy & Gov (Perencana)</div>
+            
+            <div class="card" id="ba">
+                <div class="icon">📊</div>
+                <div class="card-text"><span class="role-name">Business Analyst</span><span class="role-job">Catat Kebutuhan User</span></div>
+            </div>
+            
+            <div class="card" id="grc">
+                <div class="icon">⚖️</div> <div class="card-text"><span class="role-name">IT Auditor / GRC</span><span class="role-job">Cek Aturan & Budget</span></div>
+            </div>
+        </div>
+
+        <div class="lane lane-apps">
+            <div class="lane-header" style="color:#1e8449">Applications (Software)</div>
+            
+            <div class="group-div">Tim Software Dev</div>
+            <div class="card" id="mgr-dev">
+                <div class="icon">👔</div>
+                <div class="card-text"><span class="role-name">Manager Software Dev</span><span class="role-job">Atur Jadwal Coding</span></div>
+            </div>
+            <div class="card" id="be">
+                <div class="icon">⚙️</div>
+                <div class="card-text"><span class="role-name">Backend Developer</span><span class="role-job">Bikin "Mesin" Aplikasi</span></div>
+            </div>
+            <div class="card" id="fe">
+                <div class="icon">📱</div>
+                <div class="card-text"><span class="role-name">Frontend Developer</span><span class="role-job">Bikin Tampilan HP</span></div>
+            </div>
+
+            <div class="group-div">Tim SAP / ERP</div>
+            <div class="card" id="mgr-sap">
+                <div class="icon">👔</div>
+                <div class="card-text"><span class="role-name">Manager ERP / SAP</span><span class="role-job">Strategi SAP</span></div>
+            </div>
+            <div class="card" id="sap-func">
+                <div class="icon">📋</div>
+                <div class="card-text"><span class="role-name">SAP Functional Specialist</span><span class="role-job">Setting Modul SAP</span></div>
+            </div>
+            <div class="card" id="sap-prog">
+                <div class="icon">⌨️</div>
+                <div class="card-text"><span class="role-name">SAP Programmer (ABAP)</span><span class="role-job">Coding Bahasa SAP</span></div>
+            </div>
+        </div>
+
+        <div class="lane lane-infra">
+            <div class="lane-header" style="color:#1f618d">Infra & Ops (Hardware)</div>
+            
+            <div class="group-div">Infra & Network</div>
+            <div class="card" id="sysadmin">
+                <div class="icon">🖥️</div>
+                <div class="card-text"><span class="role-name">System Administrator</span><span class="role-job">Siapkan Server</span></div>
+            </div>
+            <div class="card" id="net">
+                <div class="icon">📡</div>
+                <div class="card-text"><span class="role-name">Network Engineer</span><span class="role-job">Siapkan Wifi/Kabel</span></div>
+            </div>
+            <div class="card" id="sec">
+                <div class="icon">🔒</div>
+                <div class="card-text"><span class="role-name">IT Security Specialist</span><span class="role-job">Amankan Data</span></div>
+            </div>
+
+            <div class="group-div">Support</div>
+            <div class="card" id="helpdesk">
+                <div class="icon">🎧</div>
+                <div class="card-text"><span class="role-name">IT Support Staff</span><span class="role-job">Bantu User Langsung</span></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const steps = [
+            // --- FASE PEMBUATAN PROYEK ---
+            {
+                phase: "FASE PEMBUATAN",
+                color: "bg-build",
+                title: "1. Tanya User (Requirement)",
+                detail: "Cerita: Orang Gudang minta aplikasi scan barang. <br><b>Business Analyst</b> datang, wawancara, lalu catat: 'Ooo, butuhnya tombol scan yang connect ke sistem SAP'.",
+                active: ['ba']
+            },
+            {
+                phase: "FASE PEMBUATAN",
+                color: "bg-build",
+                title: "2. Cek Boleh/Tidak (Audit)",
+                detail: "Dokumen catatan tadi diserahkan ke <b>IT Auditor / GRC</b>. <br>Dia ngecek: 'Ini sesuai aturan kantor gak? Budgetnya ada gak?'. Kalau oke, baru boleh lanjut.",
+                active: ['grc']
+            },
+            {
+                phase: "FASE PEMBUATAN",
+                color: "bg-build",
+                title: "3. Rapat Manager (Planning)",
+                detail: "<b>Manager Software Dev</b> dan <b>Manager ERP/SAP</b> diskusi. <br>Mereka bagi tugas: 'Tim Dev bikin aplikasi HP-nya, Tim SAP bikin penampung datanya'.",
+                active: ['mgr-dev', 'mgr-sap']
+            },
+            {
+                phase: "FASE PEMBUATAN",
+                color: "bg-build",
+                title: "4. Coding Aplikasi HP (Development)",
+                detail: "Mulai kerja teknis. <br><b>Frontend Dev</b> bikin tombol-tombol di layar HP. <br><b>Backend Dev</b> bikin 'otak' aplikasinya biar bisa nyimpan data.",
+                active: ['fe', 'be']
+            },
+            {
+                phase: "FASE PEMBUATAN",
+                color: "bg-build",
+                title: "5. Sambung ke SAP (Integration)",
+                detail: "Sekarang nyambungin aplikasi HP ke sistem pusat (SAP). <br><b>SAP Functional</b> nyeting aturannya. <br><b>SAP Programmer</b> ngetik kode bahasa alien (ABAP) biar data bisa masuk.",
+                active: ['sap-func', 'sap-prog']
+            },
+            {
+                phase: "FASE PEMBUATAN",
+                color: "bg-build",
+                title: "6. Siapkan Rumah & Jalan (Infra)",
+                detail: "Aplikasi udah jadi, tapi butuh tempat. <br><b>SysAdmin</b> nyiapin komputer server. <br><b>Network Engineer</b> mastiin wifi di gudang kenceng biar scanner gak lemot.",
+                active: ['sysadmin', 'net']
+            },
+            {
+                phase: "FASE PEMBUATAN",
+                color: "bg-build",
+                title: "7. Cek Keamanan (Security)",
+                detail: "Sebelum dipakai banyak orang, <b>IT Security Specialist</b> nyoba nge-hack sistem sendiri. Tujuannya buat nutup celah biar gak kebobolan hacker beneran.",
+                active: ['sec']
+            },
+            {
+                phase: "FASE PEMBUATAN",
+                color: "bg-build",
+                title: "8. Aplikasi Rilis (Go-Live)",
+                detail: "Sip! Aplikasi resmi dipakai orang gudang. <br><b>IT Support Staff</b> standby di lokasi buat ngajarin cara pakainya ke user.",
+                active: ['helpdesk']
+            },
+
+            // --- FASE MAINTENANCE (PERBAIKAN) ---
+            {
+                phase: "MAINTENANCE / ERROR",
+                color: "bg-maint",
+                title: "9. Ada Laporan Error!",
+                detail: "Minggu depan, User teriak: 'Woy, aplikasinya error nih!'. <br>User lapor ke <b>IT Support Staff</b> dulu. Support nyoba benerin hal-hal dasar (restart HP, cek kabel).",
+                active: ['helpdesk']
+            },
+            {
+                phase: "MAINTENANCE / ERROR",
+                color: "bg-maint",
+                title: "10. Cek Server (Level 2)",
+                detail: "Ternyata bukan HP-nya yang rusak. Tiket dilempar ke <b>SysAdmin</b>. <br>Dia cek server: 'Server aman kok, gak mati. Berarti ini salah codingannya'.",
+                active: ['sysadmin']
+            },
+            {
+                phase: "MAINTENANCE / ERROR",
+                color: "bg-maint",
+                title: "11. Bongkar Codingan (Level 3)",
+                detail: "Tiket sampai ke pembuatnya. <br><b>Backend Dev</b> & <b>SAP Programmer</b> bongkar kode lagi buat cari kutu (bug) penyebab error.",
+                active: ['be', 'sap-prog']
+            },
+            {
+                phase: "MAINTENANCE / ERROR",
+                color: "bg-maint",
+                title: "12. Update Perbaikan",
+                detail: "Bug ketemu dan diperbaiki. <br><b>SysAdmin</b> update server dengan versi baru yang udah bener. <br><b>IT Support Staff</b> kabarin user: 'Udah bener ya Pak, silakan dicoba'.",
+                active: ['sysadmin', 'helpdesk']
+            }
+        ];
+
+        let idx = -1;
+
+        function move(dir) {
+            idx += dir;
+            if(idx < 0) idx = 0;
+            if(idx >= steps.length) idx = steps.length - 1;
+            render();
+        }
+
+        function render() {
+            const s = steps[idx];
+            
+            // Update Text Info
+            document.getElementById('stepTitle').innerText = s.title;
+            document.getElementById('stepDetail').innerHTML = s.detail; // Use innerHTML for bold tags
+            
+            const badge = document.getElementById('phaseBadge');
+            badge.innerText = s.phase;
+            badge.className = `phase-badge ${s.color}`;
+
+            // Reset Cards
+            document.querySelectorAll('.card').forEach(c => c.classList.remove('active'));
+
+            // Highlight Cards
+            s.active.forEach(id => {
+                const el = document.getElementById(id);
+                if(el) el.classList.add('active');
+            });
+
+            // Visual effect for Maintenance Phase
+            const board = document.getElementById('mainBoard');
+            if (s.phase.includes("MAINTENANCE")) {
+                board.classList.add('alert-mode');
+            } else {
+                board.classList.remove('alert-mode');
+            }
+        }
+    </script>
+</body>
+</html>
